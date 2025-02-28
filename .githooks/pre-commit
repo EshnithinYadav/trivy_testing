@@ -1,0 +1,29 @@
+#!/bin/bash
+# Define the backend repository name
+BACKEND_DIR="."
+# Get the service name from the first argument (if provided)
+SERVICE_NAME="$1"
+# Check if a specific service is provided
+if [ -z "$SERVICE_NAME" ]; then
+    echo "No specific service selected. Running scan for all services..."
+    SCAN_PATH="$BACKEND_DIR"  # Scan the entire backend
+else
+    SERVICE_PATH="$BACKEND_DIR/$SERVICE_NAME"
+    # Validate if the provided service exists
+    if [ ! -d "$SERVICE_PATH" ]; then
+        echo "Error: Service '$SERVICE_NAME' not found in $BACKEND_DIR!"
+        exit 1
+    fi
+    echo "Running scan for service: $SERVICE_NAME"
+    SCAN_PATH="$SERVICE_PATH"  # Scan only the selected service
+fi
+# Run Trivy scan in the selected directory
+echo "Running Trivy scan for $SCAN_PATH ..."
+trivy fs --scanners vuln --severity HIGH,CRITICAL --skip-dirs terraform --skip-files '*.tf' "$SCAN_PATH" | tee trivy_scan_results.txt
+# Check if Trivy found any HIGH or CRITICAL vulnerabilities
+if grep -q "HIGH\|CRITICAL" trivy_scan_results.txt; then
+    echo ":x: Trivy scan detected HIGH/CRITICAL vulnerabilities in $SCAN_PATH! Fix them before committing."
+    exit 1  # Block commit
+fi
+echo ":white_tick: Trivy scan passed for $SCAN_PATH. Proceeding with commit."
+exit 0
