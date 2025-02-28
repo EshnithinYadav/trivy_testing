@@ -1,0 +1,5 @@
+#!/bin/bash
+echo "í´§ Running Git hook setup..."
+git config core.hooksPath .githooks
+echo "âœ… Git hooks path configured automatically!"
+
